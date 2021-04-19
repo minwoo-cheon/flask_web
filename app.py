@@ -21,5 +21,11 @@ def articles():
     return render_template("articles.html",  articles = articles)
 
 
+@app.route('/article/<id>')
+def article(id):
+    print(id)
+    return "success"
+
+
 if __name__ == '__main__':
     app.run()
