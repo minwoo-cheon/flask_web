@@ -2,15 +2,18 @@ from flask import Flask , render_template, request, redirect
 from data import Articles
 #render_template html과 만나면 해당 템플릿으로 변환시켜 줌.
 import pymysql
+
 app = Flask(__name__)
 app.debug = True
+
 db = pymysql.connect(
     host='localhost',
-    port = 3306,
-    user = 'root',
-    password = '1234',
-    db = 'busan'
+    port=3306,
+    user='root',
+    passwd='1234',
+    db='busan'
 )
+
 # cursor = db.cursor()
 @app.route('/', methods=['GET']) #데커레이터  경로 라우팅, 방식(지금은 리스트)
 def index():
@@ -50,6 +53,7 @@ def add_articles():
         author = request.form['author']
         title = request.form['title']
         desc = request.form['desc']
+
         sql = "INSERT INTO `topic` (`title`, `body`, `author`) VALUES (%s, %s, %s);"
         input_data = [title, desc, author]
         print(request.form['desc'])
@@ -63,19 +67,6 @@ def add_articles():
         # return "Success"
     else:
         return render_template("add_articles.html")
-
-@app.route('/delete/<int:id>', methods=['POST'])
-def delete(id):
-    cursor=db.cursor()
-    #sql='DELETE FROM topic WHERE id=%s;'
-    #id = [id]
-    #cursor.execute(sql, id)
-    sql='DELETE FROM topic WHERE id={};'.format(id)
-    cursor.execute(sql)
-    db.commit()
-
-    return redirect("/articles")
-
 # @app.route('/add_articles')
 # def add_articles():
 #     # return "<h1>글쓰기 페이지</h1>"
@@ -83,5 +74,32 @@ def delete(id):
 # @app.route('/add_articles', methods = ["POST"])
 # def insert_articles():
 #     return "Success"
-if __name__ == '__main__': ##처음 서버 띄우는 곳, 초기 실행
-    app.run()
+@app.route('/delete/<int:id>', methods = ['POST'])
+def delete(id):
+    cursor = db.cursor()
+    sql = 'DELETE FROM topic WHERE id = {};'.format(id)
+    cursor.execute(sql)
+    # sql = 'DELETE FROM topic WHERE id = %s;'
+    # id = [id]
+    # cursor.execute(sql, id)
+    db.commit()
+    return redirect("/articles")
+
+
+@app.route('/<int:id>/edit', methods=["GET","POST"])
+def edit(id):
+
+    cursor = db.cursor()
+    if request.method == "POST":
+        return "Success"
+
+    else:
+        sql="SELECT * FROM topic WHERE id ={}".format(id)
+        cursor.execute(sql)
+        topic = cursor.fetchone()
+        print(topic[1])
+        return render_template("edit_article.html", article = topic)
+
+
+if __name__ == '__main__':
+  app.run()
