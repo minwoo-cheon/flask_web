@@ -2,6 +2,7 @@ from flask import Flask , render_template, request, redirect
 from data import Articles
 #render_template html과 만나면 해당 템플릿으로 변환시켜 줌.
 import pymysql
+from passlib.hash import sha256_crypt
 
 app = Flask(__name__)
 app.debug = True
@@ -29,7 +30,7 @@ def articles():
     sql = 'SELECT * FROM topic;'
     cursor.execute(sql)
     topics = cursor.fetchall()
-    print(topics)
+    ##print(topics)
     # articles = Articles()
     # print(articles[0]['title'])
     return render_template("articles.html", articles = topics)
@@ -39,7 +40,7 @@ def article(id):
     sql = 'SELECT * FROM topic WHERE id={}'.format(id)
     cursor.execute(sql)
     topic = cursor.fetchone()
-    print(topic)
+    ##print(topic)
     # articles = Articles()
     # article = articles[id-1]
     # articles = Articles()
@@ -56,12 +57,12 @@ def add_articles():
 
         sql = "INSERT INTO `topic` (`title`, `body`, `author`) VALUES (%s, %s, %s);"
         input_data = [title, desc, author]
-        print(request.form['desc'])
+        ##print(request.form['desc'])
         #이건 vscode오류라서 변수를 사용하고 있지 않아서 생기는 경고창이라
         #오류라고 볼순 없어영
         cursor.execute(sql, input_data)
         db.commit()
-        print(cursor.rowcount)
+        ##print(cursor.rowcount)
         # db.close()
         return redirect("/articles")
         # return "Success"
@@ -91,14 +92,63 @@ def edit(id):
 
     cursor = db.cursor()
     if request.method == "POST":
-        return "Success"
+        title = request.form['title']
+        desc = request.form['desc']
+        author = request.form['author']
+        print(id)
+        sql = 'UPDATE topic SET title = %s, body = %s , author = %s WHERE id = %s ;'
+        input_data = [title, desc, author, id]
+        cursor.execute(sql , input_data)
+        db.commit()
+        print(request.form['title'])
+        return redirect('/articles')
 
     else:
         sql="SELECT * FROM topic WHERE id ={}".format(id)
         cursor.execute(sql)
         topic = cursor.fetchone()
-        print(topic[1])
+        print(topic)
         return render_template("edit_article.html", article = topic)
+
+
+@app.route('/register', methods = ['GET', 'POST'])
+def register():
+    cursor = db.cursor()
+    if request.method == "POST":
+        name = request.form['name']
+        email = request.form['email']
+        username = request.form['username']
+        userpw = sha256_crypt.encrypt(request.form['userpw'])
+        sql = "INSERT INTO users (name, email, username, password) VALUES (%s,%s,%s,%s)"
+        input_data = [name, email, username, userpw ]
+        cursor.execute(sql, input_data)
+        db.commit()
+
+        return redirect('/articles')
+    else:
+        return render_template("register.html")
+
+@app.route('/login', methods=['GET','POST'])
+def login():
+    cursor = db.cursor()
+    if request.method == "POST":
+        email = request.form['email']
+        userpw_1 = request.form['userpw']   
+        # print(userpw_1)     
+        sql = 'SELECT * FROM users WHERE email = %s;'
+        input_data = [email]
+        cursor.execute(sql, input_data)
+        user = cursor.fetchone()
+        if user == None :
+            print(user)
+            return redirect('/register')
+        else:
+            if sha256_crypt.verify(userpw_1, user[4]):
+                return redirect('/articles')
+            else:
+                return user[4]
+    else:
+        return render_template("login.html")
 
 
 if __name__ == '__main__':
